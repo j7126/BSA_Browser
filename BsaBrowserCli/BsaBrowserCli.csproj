@@ -1,0 +1,12 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>exe</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../BsaLib/BsaLib.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Management.Automation" />
+    <PackageReference Include="System.Resources.Extensions" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+
+    <!-- Version number -->
+    <VersionPrefix>2.0.0</VersionPrefix>
+    <VersionSuffix Condition="'$(Configuration)' == 'Debug'">dev</VersionSuffix>
+
+    <FullVersion>$(VersionPrefix)</FullVersion>
+    <FullVersion Condition="'$(VersionSuffix)' != ''">$(VersionPrefix)-$(VersionSuffix)</FullVersion>
+
+    <AssemblyVersion>$(VersionPrefix)</AssemblyVersion>
+    <FileVersion>$(VersionPrefix)</FileVersion>
+    <InformationalVersion>$(FullVersion)</InformationalVersion>
+
+    <!-- Output Directory -->
+    <ArtifactsPath>$(MSBuildThisFileDirectory)bin</ArtifactsPath>
+
+    <!-- Strict code style warnings -->
+    <AnalysisMode>All</AnalysisMode>
+  </PropertyGroup>
+</Project>
