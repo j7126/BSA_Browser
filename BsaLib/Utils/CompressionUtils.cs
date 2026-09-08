@@ -24,7 +24,6 @@ namespace BsaLib.Utils
                                       uint length,
                                       Stream output,
                                       Action<ulong> progressReport,
-                                      SharedExtractParams extractParams,
                                       long progressInterval = DefaultProgressInterval)
         {
             int count;
@@ -59,15 +58,14 @@ namespace BsaLib.Utils
         /// </summary>
         /// <param name="input">The <see cref="Stream"/> with the data to decompress.</param>
         /// <param name="length">The length of the data in the <paramref name="input"/>.</param>
+        /// <param name="uncompressedLength">The length of the uncompressed data.</param>
         /// <param name="output">The <see cref="Stream"/> to decompress to.</param>
-        /// <param name="progressReport">Invokes at interval, based on <paramref name="progressInterval"/>, the amount of bytes written.</param>
-        /// <param name="progressInterval">The interval at which to invoke <paramref name="progressReport"/>.</param>
+        /// <param name="progressReport">Invokes with the amount of bytes written.</param>
         public static void DecompressLZ4(Stream input,
                                          uint length,
                                          uint uncompressedLength,
                                          Stream output,
-                                         Action<ulong> progressReport,
-                                         long progressInterval = DefaultProgressInterval)
+                                         Action<ulong> progressReport)
         {
             var data = input.ReadBytes((int)length);
             var decompressed = new byte[uncompressedLength];

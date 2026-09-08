@@ -57,13 +57,6 @@ namespace BsaLib
             this.BinaryReader?.Close();
         }
 
-        /// <summary>
-        /// Returns a <see cref="SharedExtractParams"/> with <see cref="BinaryReader"/> and <see cref="Inflater"/> originally used for multi threading.
-        /// </summary>
-        /// <param name="reader">True if a new <see cref="BinaryReader"/> should be created.</param>
-        /// <param name="inflater">True if a new <see cref="Inflater"/> should be created.</param>
-        public SharedExtractParams CreateSharedParams(bool reader, bool inflater) => new(this, reader);
-
         protected abstract void Open(string filePath);
     }
 }

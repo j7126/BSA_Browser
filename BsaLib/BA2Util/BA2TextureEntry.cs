@@ -411,8 +411,7 @@ namespace BsaLib.BA2Util
                         CompressionUtils.Decompress(reader.BaseStream,
                             this.Chunks[i].packSz,
                             stream,
-                            bytesWritten => this.BytesWritten = prev + bytesWritten,
-                            extractParams);
+                            bytesWritten => this.BytesWritten = prev + bytesWritten);
                     }
                 }
             }

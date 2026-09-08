@@ -159,8 +159,7 @@ namespace BsaLib.BSAUtil
                     CompressionUtils.Decompress(reader.BaseStream,
                         this.Size - 4,
                         stream,
-                        bytesWriten => this.BytesWritten = bytesWriten,
-                        extractParams);
+                        bytesWriten => this.BytesWritten = bytesWriten);
                 }
             }
         }
