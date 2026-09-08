@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using ICSharpCode.SharpZipLib.Zip.Compression;
 using BsaLib.Enums;
 
 namespace BsaLib
@@ -27,7 +26,6 @@ namespace BsaLib
         public virtual ArchiveTypes Type { get; protected set; }
 
         public Encoding Encoding { get; protected set; }
-        public Inflater Inflater { get; protected set; } = new Inflater();
         public List<ArchiveEntry> Files { get; protected set; } = [];
         public BinaryReader BinaryReader { get; protected set; }
 
@@ -61,7 +59,7 @@ namespace BsaLib
         /// </summary>
         /// <param name="reader">True if a new <see cref="BinaryReader"/> should be created.</param>
         /// <param name="inflater">True if a new <see cref="Inflater"/> should be created.</param>
-        public SharedExtractParams CreateSharedParams(bool reader, bool inflater) => new(this, reader, inflater);
+        public SharedExtractParams CreateSharedParams(bool reader, bool inflater) => new(this, reader);
 
         protected abstract void Open(string filePath);
     }

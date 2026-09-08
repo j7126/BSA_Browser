@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 
 namespace BsaLib.Utils
 {
@@ -31,12 +32,13 @@ namespace BsaLib.Utils
             byte[] buffer = new byte[BufferSize];
 
             var raw = input.ReadBytes((int)length);
-            extractParams.Inflater.Reset();
-            extractParams.Inflater.SetInput(raw, 0, raw.Length);
+
+            using var compressedStream = new MemoryStream(raw, writable: false);
+            using var inflater = new ZLibStream(compressedStream, CompressionMode.Decompress);
 
             var sw = Stopwatch.StartNew();
 
-            while ((count = extractParams.Inflater.Inflate(buffer)) > 0)
+            while ((count = inflater.Read(buffer, 0, buffer.Length)) > 0)
             {
                 output.Write(buffer, 0, count);
                 written += (ulong)count;

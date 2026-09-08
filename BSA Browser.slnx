@@ -8,8 +8,6 @@
     <File Path="Inno Setup Script.iss" />
     <File Path="LICENSE" />
     <File Path="README.md" />
-    <File Path="TODO.md" />
-    <File Path="VERSION" />
   </Folder>
   <Project Path="BsaBrowserCli/BsaBrowserCli.csproj" />
   <Project Path="BsaLib/BsaLib.csproj" />

@@ -16,8 +16,5 @@
 
     <!-- Output Directory -->
     <ArtifactsPath>$(MSBuildThisFileDirectory)bin</ArtifactsPath>
-
-    <!-- Strict code style warnings -->
-    <AnalysisMode>All</AnalysisMode>
   </PropertyGroup>
 </Project>

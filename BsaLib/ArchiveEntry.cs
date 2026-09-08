@@ -90,7 +90,7 @@ namespace BsaLib
         }
         public void Extract(string destination, bool preserveFolder, string newName)
         {
-            Extract(destination, preserveFolder, newName, new SharedExtractParams(Archive, false, false));
+            Extract(destination, preserveFolder, newName, new SharedExtractParams(Archive, false));
         }
         public void Extract(string destination, bool preserveFolder, string newName, SharedExtractParams extractParams)
         {
@@ -114,7 +114,7 @@ namespace BsaLib
         /// <summary>
         /// Extracts and uncompresses data and then returns the stream.
         /// </summary>
-        public virtual MemoryStream GetDataStream() => GetDataStream(new SharedExtractParams(Archive, false, false));
+        public virtual MemoryStream GetDataStream() => GetDataStream(new SharedExtractParams(Archive, false));
         /// <summary>
         /// Extracts and uncompresses data and then returns the stream.
         /// </summary>
@@ -131,7 +131,7 @@ namespace BsaLib
         /// <summary>
         /// Returns a <see cref="MemoryStream"/> of the raw data.
         /// </summary>
-        public MemoryStream GetRawDataStream() => GetRawDataStream(new SharedExtractParams(Archive, false, false));
+        public MemoryStream GetRawDataStream() => GetRawDataStream(new SharedExtractParams(Archive, false));
         /// <summary>
         /// Returns a <see cref="MemoryStream"/> of the raw data.
         /// </summary>
