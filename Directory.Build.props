@@ -3,6 +3,8 @@
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
 
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
     <!-- Version number -->
     <VersionPrefix>2.0.0</VersionPrefix>
     <VersionSuffix Condition="'$(Configuration)' == 'Debug'">dev</VersionSuffix>
@@ -16,5 +18,8 @@
 
     <!-- Output Directory -->
     <ArtifactsPath>$(MSBuildThisFileDirectory)bin</ArtifactsPath>
+
+    <!-- Code style warnings -->
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
   </PropertyGroup>
 </Project>

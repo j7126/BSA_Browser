@@ -33,11 +33,11 @@ namespace BsaLib.BSAUtil
 
         public override string GetToolTipText()
         {
-            return $"Offset:\t\t {Offset}\n" +
-                   $"Size:\t\t {Size}\n" +
-                   $"Real Size:\t {RealSize}\n" +
-                   $"Compressed:\t {Compressed}\n" +
-                   $"Record ID:\t {RecordId}";
+            return $"Offset:\t\t {this.Offset}\n" +
+                   $"Size:\t\t {this.Size}\n" +
+                   $"Real Size:\t {this.RealSize}\n" +
+                   $"Compressed:\t {this.Compressed}\n" +
+                   $"Record ID:\t {this.RecordId}";
         }
 
         protected override void WriteDataToStream(Stream stream, SharedExtractParams extractParams, bool decompress = true)
@@ -56,13 +56,17 @@ namespace BsaLib.BSAUtil
             }
 
             if (this.Size > int.MaxValue)
+            {
                 throw new InvalidOperationException("Compressed XnGine record is too large to extract in memory.");
+            }
 
-            byte[] data = reader.ReadBytes((int)this.Size);
+            var data = reader.ReadBytes((int)this.Size);
             if (data.Length != this.Size)
+            {
                 throw new EndOfStreamException("Unexpected end of stream while reading compressed XnGine record.");
+            }
 
-            byte[] decompressed = CompressionUtils.DecompressBattlespireLzss(data);
+            var decompressed = CompressionUtils.DecompressBattlespireLzss(data);
             stream.Write(decompressed, 0, decompressed.Length);
             this.RealSize = (uint)decompressed.Length;
             this.BytesWritten = (ulong)decompressed.Length;

@@ -17,12 +17,12 @@ namespace BsaLib.BA2Util
         /// <summary>
         /// Unknown.
         /// </summary>
-        private ushort chunkHdrLen { get; set; }
+        private ushort ChunkHdrLen { get; set; }
         /// <summary>
         /// Unknown. 00 00 00 00.
         /// </summary>
-        private uint unk2 { get; set; }
-        private uint align { get; set; }
+        private uint Unk2 { get; set; }
+        private uint Align { get; set; }
 
         public readonly uint numChunks;
         public readonly uint format;
@@ -39,9 +39,12 @@ namespace BsaLib.BA2Util
         {
             get
             {
-                uint size = this.RealSize;
+                var size = this.RealSize;
                 foreach (var chunk in this.Chunks)
+                {
                     size += chunk.fullSz;
+                }
+
                 return size;
             }
         }
@@ -50,35 +53,35 @@ namespace BsaLib.BA2Util
 
         public BA2GNFEntry(Archive ba2) : base(ba2)
         {
-            nameHash = ba2.BinaryReader.ReadUInt32();
-            Extension = new string(ba2.BinaryReader.ReadChars(4));
-            dirHash = ba2.BinaryReader.ReadUInt32();
+            this.NameHash = ba2.BinaryReader.ReadUInt32();
+            this.Extension = new string(ba2.BinaryReader.ReadChars(4));
+            this.DirHash = ba2.BinaryReader.ReadUInt32();
 
-            FullPath = dirHash > 0 ? $"{dirHash:X}_" : string.Empty;
-            FullPath += $"{nameHash:X}.{Extension.TrimEnd('\0')}";
-            FullPathOriginal = FullPath;
+            this.FullPath = this.DirHash > 0 ? $"{this.DirHash:X}_" : string.Empty;
+            this.FullPath += $"{this.NameHash:X}.{this.Extension.TrimEnd('\0')}";
+            this.FullPathOriginal = this.FullPath;
 
-            ba2.BinaryReader.ReadByte(); // Unknown
-            numChunks = ba2.BinaryReader.ReadByte();
-            chunkHdrLen = ba2.BinaryReader.ReadUInt16();
+            _ = ba2.BinaryReader.ReadByte(); // Unknown
+            this.numChunks = ba2.BinaryReader.ReadByte();
+            this.ChunkHdrLen = ba2.BinaryReader.ReadUInt16();
 
-            GNFHeader = ba2.BinaryReader.ReadBytes(32);
+            this.GNFHeader = ba2.BinaryReader.ReadBytes(32);
 
-            uint formatInfo = BitConverter.ToUInt32(GNFHeader.Skip(4).Take(4).ToArray(), 0);
-            format = formatInfo >> 20 & ((1 << 6) - 1); // Skip first 20 bits then take 6 next bits
-            numFormat = formatInfo >> 26 & ((1 << 4) - 1); // Skip first 26 bits then take 4 next bits
+            var formatInfo = BitConverter.ToUInt32([.. this.GNFHeader.Skip(4).Take(4)], 0);
+            this.format = (formatInfo >> 20) & ((1 << 6) - 1); // Skip first 20 bits then take 6 next bits
+            this.numFormat = (formatInfo >> 26) & ((1 << 4) - 1); // Skip first 26 bits then take 4 next bits
 
-            uint size = BitConverter.ToUInt32(GNFHeader.Skip(8).Take(4).ToArray(), 0);
-            width = (size & IntFirst14BitMask) + 1; // Get first 14 bits
-            height = (size >> 14 & IntFirst14BitMask) + 1; // Shifts past first 14 bits then get first 14 bits again
+            var size = BitConverter.ToUInt32([.. this.GNFHeader.Skip(8).Take(4)], 0);
+            this.width = (size & IntFirst14BitMask) + 1; // Get first 14 bits
+            this.height = ((size >> 14) & IntFirst14BitMask) + 1; // Shifts past first 14 bits then get first 14 bits again
 
-            Offset = ba2.BinaryReader.ReadUInt64();
-            Size = ba2.BinaryReader.ReadUInt32();
-            RealSize = ba2.BinaryReader.ReadUInt32();
-            unk2 = ba2.BinaryReader.ReadUInt32();
-            align = ba2.BinaryReader.ReadUInt32();
+            this.Offset = ba2.BinaryReader.ReadUInt64();
+            this.Size = ba2.BinaryReader.ReadUInt32();
+            this.RealSize = ba2.BinaryReader.ReadUInt32();
+            this.Unk2 = ba2.BinaryReader.ReadUInt32();
+            this.Align = ba2.BinaryReader.ReadUInt32();
 
-            for (int i = 0; i < (numChunks - 1); i++)
+            for (var i = 0; i < (this.numChunks - 1); i++)
             {
                 this.Chunks.Add(new BA2TextureChunk(ba2.BinaryReader));
             }
@@ -86,26 +89,26 @@ namespace BsaLib.BA2Util
 
         public override string GetToolTipText()
         {
-            string dxgi = Enum.GetName(typeof(DXGI_FORMAT_FULL), format);
+            var dxgi = Enum.GetName(typeof(DXGI_FORMAT_FULL), this.format);
 
-            return $"Name hash:\t {nameHash:X}\n" +
-                $"Directory hash:\t {dirHash:X}\n" +
-                $"DXGI format:\t {dxgi} ({format})\n" +
-                $"Resolution:\t {width}x{height}\n" +
-                $"Chunks:\t\t {numChunks}\n" +
-                $"Chunk header len:\t {chunkHdrLen}\n" +
-                $"Num format:\t {numFormat}\n" +
-                $"Offset:\t\t {Offset}\n" +
-                $"Size:\t\t {Size}\n" +
-                $"Real Size:\t {RealSize}\n" +
-                $"Align:\t\t {align:X}\n\n" +
-                $"{nameof(unk2)}:\t\t {unk2}";
+            return $"Name hash:\t {this.NameHash:X}\n" +
+                $"Directory hash:\t {this.DirHash:X}\n" +
+                $"DXGI format:\t {dxgi} ({this.format})\n" +
+                $"Resolution:\t {this.width}x{this.height}\n" +
+                $"Chunks:\t\t {this.numChunks}\n" +
+                $"Chunk header len:\t {this.ChunkHdrLen}\n" +
+                $"Num format:\t {this.numFormat}\n" +
+                $"Offset:\t\t {this.Offset}\n" +
+                $"Size:\t\t {this.Size}\n" +
+                $"Real Size:\t {this.RealSize}\n" +
+                $"Align:\t\t {this.Align:X}\n\n" +
+                $"{nameof(this.Unk2)}:\t\t {this.Unk2}";
         }
 
         protected override void WriteDataToStream(Stream stream, SharedExtractParams extractParams, bool decompress)
         {
             var reader = extractParams.Reader;
-            reader.BaseStream.Seek((long)this.Offset, SeekOrigin.Begin);
+            _ = reader.BaseStream.Seek((long)this.Offset, SeekOrigin.Begin);
             // Reset at start since value might still be in used for a bit after
             this.BytesWritten = 0;
 
@@ -141,22 +144,22 @@ namespace BsaLib.BA2Util
         {
             var reader = extractParams.Reader;
 
-            for (int i = 0; i < (numChunks - 1); i++)
+            for (var i = 0; i < (this.numChunks - 1); i++)
             {
-                reader.BaseStream.Seek((long)this.Chunks[i].offset, SeekOrigin.Begin);
+                _ = reader.BaseStream.Seek((long)this.Chunks[i].offset, SeekOrigin.Begin);
 
 
                 if (!decompress)
                 {
-                    ulong prev = this.BytesWritten;
+                    var prev = this.BytesWritten;
                     StreamUtils.WriteSectionToStream(reader.BaseStream,
-                        Math.Max(Chunks[i].packSz, Chunks[i].fullSz),  // Lazy hack, only one should be set when not compressed
+                        Math.Max(this.Chunks[i].packSz, this.Chunks[i].fullSz),  // Lazy hack, only one should be set when not compressed
                         stream,
                         bytesWritten => this.BytesWritten = prev + bytesWritten);
                 }
                 else
                 {
-                    ulong prev = this.BytesWritten;
+                    var prev = this.BytesWritten;
                     CompressionUtils.Decompress(reader.BaseStream,
                         this.Chunks[i].packSz,
                         stream,
@@ -181,8 +184,10 @@ namespace BsaLib.BA2Util
             writer.Write(BitConverter.GetBytes(this.RealSize + 256).Reverse().ToArray()); // File size + header size
             writer.Write(this.GNFHeader);
 
-            for (int i = 0; i < 208; i++)
+            for (var i = 0; i < 208; i++)
+            {
                 writer.Write((byte)0x0); // Padding
+            }
         }
     }
 }

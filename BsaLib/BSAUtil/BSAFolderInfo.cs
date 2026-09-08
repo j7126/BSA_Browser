@@ -20,7 +20,9 @@ namespace BsaLib.BSAUtil
             this.FileCount = reader.ReadUInt32();
 
             if (version == BSA.SSE_HEADER_VERSION)
+            {
                 this.Unk1 = reader.ReadUInt32();
+            }
 
             this.Offset = version == BSA.SSE_HEADER_VERSION ? reader.ReadUInt64() : reader.ReadUInt32();
         }

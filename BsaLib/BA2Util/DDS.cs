@@ -17,7 +17,7 @@ namespace BsaLib.BA2Util
         public static uint MAKEFOURCC(char ch0, char ch1, char ch2, char ch3)
         {
             // This is alien to me...
-            return ((uint)(byte)(ch0) | ((uint)(byte)(ch1) << 8) | ((uint)(byte)(ch2) << 16 | ((uint)(byte)(ch3) << 24)));
+            return (byte)ch0 | ((uint)(byte)ch1 << 8) | ((uint)(byte)ch2 << 16) | ((uint)(byte)ch3 << 24);
         }
 
         public const int DDS_FOURCC = 0x00000004; // DDPF_FOURCC
@@ -242,36 +242,40 @@ namespace BsaLib.BA2Util
             return (9 * 4) + DDS_PIXELFORMAT.GetSize() + (14 * 4);
         }
 
-        public void Write(System.IO.BinaryWriter bw)
+        public readonly void Write(System.IO.BinaryWriter bw)
         {
-            bw.Write(dwSize);
-            bw.Write(dwHeaderFlags);
-            bw.Write(dwHeight);
-            bw.Write(dwWidth);
-            bw.Write(dwPitchOrLinearSize);
-            bw.Write(dwDepth);
-            bw.Write(dwMipMapCount);
+            bw.Write(this.dwSize);
+            bw.Write(this.dwHeaderFlags);
+            bw.Write(this.dwHeight);
+            bw.Write(this.dwWidth);
+            bw.Write(this.dwPitchOrLinearSize);
+            bw.Write(this.dwDepth);
+            bw.Write(this.dwMipMapCount);
 
             // Just write it multiple times, since it's never assigned a value anyway
-            for (int i = 0; i < 11; i++)
-                bw.Write(dwReserved1);
+            for (var i = 0; i < 11; i++)
+            {
+                bw.Write(this.dwReserved1);
+            }
 
             // DDS_PIXELFORMAT
-            bw.Write(PixelFormat.dwSize);
-            bw.Write(PixelFormat.dwFlags);
-            bw.Write(PixelFormat.dwFourCC);
-            bw.Write(PixelFormat.dwRGBBitCount);
-            bw.Write(PixelFormat.dwRBitMask);
-            bw.Write(PixelFormat.dwGBitMask);
-            bw.Write(PixelFormat.dwBBitMask);
-            bw.Write(PixelFormat.dwABitMask);
+            bw.Write(this.PixelFormat.dwSize);
+            bw.Write(this.PixelFormat.dwFlags);
+            bw.Write(this.PixelFormat.dwFourCC);
+            bw.Write(this.PixelFormat.dwRGBBitCount);
+            bw.Write(this.PixelFormat.dwRBitMask);
+            bw.Write(this.PixelFormat.dwGBitMask);
+            bw.Write(this.PixelFormat.dwBBitMask);
+            bw.Write(this.PixelFormat.dwABitMask);
 
-            bw.Write(dwSurfaceFlags);
-            bw.Write(dwCubemapFlags);
+            bw.Write(this.dwSurfaceFlags);
+            bw.Write(this.dwCubemapFlags);
 
             // Just write it multiple times, since it's never assigned a value anyway
-            for (int i = 0; i < 3; i++)
-                bw.Write(dwReserved2);
+            for (var i = 0; i < 3; i++)
+            {
+                bw.Write(this.dwReserved2);
+            }
         }
     }
 
@@ -284,13 +288,13 @@ namespace BsaLib.BA2Util
         public uint arraySize;
         public uint miscFlags2;
 
-        public void Write(System.IO.BinaryWriter bw)
+        public readonly void Write(System.IO.BinaryWriter bw)
         {
-            bw.Write(dxgiFormat);
-            bw.Write(resourceDimension);
-            bw.Write(miscFlag);
-            bw.Write(arraySize);
-            bw.Write(miscFlags2);
+            bw.Write(this.dxgiFormat);
+            bw.Write(this.resourceDimension);
+            bw.Write(this.miscFlag);
+            bw.Write(this.arraySize);
+            bw.Write(this.miscFlags2);
         }
 
         public static uint GetSize()

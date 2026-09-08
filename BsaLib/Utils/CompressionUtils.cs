@@ -29,7 +29,7 @@ namespace BsaLib.Utils
         {
             int count;
             ulong written = 0;
-            byte[] buffer = new byte[BufferSize];
+            var buffer = new byte[BufferSize];
 
             var raw = input.ReadBytes((int)length);
 
@@ -69,10 +69,10 @@ namespace BsaLib.Utils
                                          Action<ulong> progressReport,
                                          long progressInterval = DefaultProgressInterval)
         {
-            byte[] data = input.ReadBytes((int)length);
-            byte[] decompressed = new byte[uncompressedLength];
+            var data = input.ReadBytes((int)length);
+            var decompressed = new byte[uncompressedLength];
 
-            int written = K4os.Compression.LZ4.LZ4Codec.Decode(data, decompressed);
+            var written = K4os.Compression.LZ4.LZ4Codec.Decode(data, decompressed);
 
             output.Write(decompressed, 0, written);
 
@@ -81,29 +81,33 @@ namespace BsaLib.Utils
 
         public static byte[] DecompressBattlespireLzss(byte[] input)
         {
-            byte[] window = new byte[4096];
+            var window = new byte[4096];
 
-            for (int i = 0; i < 4078; i++)
+            for (var i = 0; i < 4078; i++)
+            {
                 window[i] = 0x20;
+            }
 
-            int windowPos = 4078;
-            int pos = 0;
+            var windowPos = 4078;
+            var pos = 0;
             var output = new List<byte>(input.Length * 2);
 
             while (pos < input.Length)
             {
-                byte marker = input[pos++];
+                var marker = input[pos++];
 
-                for (int bit = 0; bit < 8; bit++)
+                for (var bit = 0; bit < 8; bit++)
                 {
-                    bool rawByte = ((marker >> bit) & 0x1) != 0;
+                    var rawByte = ((marker >> bit) & 0x1) != 0;
 
                     if (rawByte)
                     {
                         if (pos >= input.Length)
-                            return output.ToArray();
+                        {
+                            return [.. output];
+                        }
 
-                        byte value = input[pos++];
+                        var value = input[pos++];
                         window[windowPos] = value;
                         windowPos = (windowPos + 1) & 0x0FFF;
                         output.Add(value);
@@ -111,16 +115,18 @@ namespace BsaLib.Utils
                     else
                     {
                         if (pos + 1 >= input.Length)
-                            return output.ToArray();
-
-                        byte b0 = input[pos++];
-                        byte b1 = input[pos++];
-                        int offset = b0 | ((b1 & 0xF0) << 4);
-                        int length = (b1 & 0x0F) + 3;
-
-                        for (int i = 0; i < length; i++)
                         {
-                            byte value = window[(offset + i) & 0x0FFF];
+                            return [.. output];
+                        }
+
+                        var b0 = input[pos++];
+                        var b1 = input[pos++];
+                        var offset = b0 | ((b1 & 0xF0) << 4);
+                        var length = (b1 & 0x0F) + 3;
+
+                        for (var i = 0; i < length; i++)
+                        {
+                            var value = window[(offset + i) & 0x0FFF];
                             window[windowPos] = value;
                             windowPos = (windowPos + 1) & 0x0FFF;
                             output.Add(value);
@@ -129,7 +135,7 @@ namespace BsaLib.Utils
                 }
             }
 
-            return output.ToArray();
+            return [.. output];
         }
     }
 }

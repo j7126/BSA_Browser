@@ -42,7 +42,7 @@ namespace BsaLib.Utils
         {
             int count;
             ulong written = 0;
-            byte[] buffer = new byte[BufferSize];
+            var buffer = new byte[BufferSize];
 
             var sw = Stopwatch.StartNew();
 

@@ -39,23 +39,13 @@ namespace BsaLib.BSAUtil
         private bool xnGineHasCompressed;
         private XnGineIndexType xnGineIndexType = XnGineIndexType.NameRecord;
 
-        public bool Compressed
-        {
-            get
+        public bool Compressed => this.isXnGineArchive
+            ? this.xnGineHasCompressed
+            : this.Magic switch
             {
-                if (this.isXnGineArchive)
-                    return this.xnGineHasCompressed;
-
-                switch (this.Magic)
-                {
-                    case BSA_HEADER_MAGIC:
-                        return (((BSAHeader)Header).ArchiveFlags & OB_BSAARCHIVE_COMPRESSFILES) > 0;
-                    case MW_HEADER_MAGIC:
-                    default:
-                        return false;
-                }
-            }
-        }
+                BSA_HEADER_MAGIC => (((BSAHeader)this.Header).ArchiveFlags & OB_BSAARCHIVE_COMPRESSFILES) > 0,
+                _ => false,
+            };
         public bool ContainsFileNameBlobs
         {
             get
@@ -63,12 +53,10 @@ namespace BsaLib.BSAUtil
                 switch (this.Magic)
                 {
                     case BSA_HEADER_MAGIC:
-                        var header = (BSAHeader)Header;
+                        var header = (BSAHeader)this.Header;
 
-                        if (header.Version == F3_HEADER_VERSION || header.Version == SSE_HEADER_VERSION)
-                            return (header.ArchiveFlags & F3_BSAARCHIVE_PREFIXFULLFILENAMES) > 0;
-                        else
-                            return false;
+                        return header.Version is F3_HEADER_VERSION or SSE_HEADER_VERSION && (header.ArchiveFlags & F3_BSAARCHIVE_PREFIXFULLFILENAMES) > 0;
+
                     case MW_HEADER_MAGIC:
                     default:
                         return false;
@@ -85,56 +73,38 @@ namespace BsaLib.BSAUtil
             get
             {
                 if (this.isXnGineArchive)
+                {
                     return this.xnGineIndexType == XnGineIndexType.NameRecord;
+                }
 
-                switch (Magic)
+                switch (this.Magic)
                 {
                     case BSA_HEADER_MAGIC:
-                        var header = (BSAHeader)Header;
+                        var header = (BSAHeader)this.Header;
                         return (header.ArchiveFlags & 0x1) > 0 && (header.ArchiveFlags & 0x2) > 0; // Should always be true
                     case MW_HEADER_MAGIC:
-                        return hasNameTableMW;
+                        return this.hasNameTableMW;
                     default:
                         return true;
                 }
             }
         }
-        public override string VersionString
-        {
-            get
-            {
-                if (this.isXnGineArchive)
-                    return this.xnGineIndexType.ToString();
-
-                switch (this.Magic)
-                {
-                    case MW_HEADER_MAGIC:
-                        return ((BSAHeaderMW)Header).Version.ToString("X");
-                    case BSA_HEADER_MAGIC:
-                        return ((BSAHeader)Header).Version.ToString();
-                    default:
-                        return "None";
-                }
-            }
-        }
-        public override ArchiveTypes Type
-        {
-            get
-            {
-                if (this.isXnGineArchive)
-                    return ArchiveTypes.BSA_XN;
-
-                switch (this.Magic)
-                {
-                    case MW_HEADER_MAGIC:
-                        return ArchiveTypes.BSA_MW;
-                    case BSA_HEADER_MAGIC:
-                        return ((BSAHeader)Header).Version == SSE_HEADER_VERSION ? ArchiveTypes.BSA_SE : ArchiveTypes.BSA;
-                    default:
-                        return ArchiveTypes.DAT_F2;
-                }
-            }
-        }
+        public override string VersionString => this.isXnGineArchive
+                    ? this.xnGineIndexType.ToString()
+                    : this.Magic switch
+                    {
+                        MW_HEADER_MAGIC => ((BSAHeaderMW)this.Header).Version.ToString("X"),
+                        BSA_HEADER_MAGIC => ((BSAHeader)this.Header).Version.ToString(),
+                        _ => "None",
+                    };
+        public override ArchiveTypes Type => this.isXnGineArchive
+                    ? ArchiveTypes.BSA_XN
+                    : this.Magic switch
+                    {
+                        MW_HEADER_MAGIC => ArchiveTypes.BSA_MW,
+                        BSA_HEADER_MAGIC => ((BSAHeader)this.Header).Version == SSE_HEADER_VERSION ? ArchiveTypes.BSA_SE : ArchiveTypes.BSA,
+                        _ => ArchiveTypes.DAT_F2,
+                    };
 
         public BSA(string filePath) : base(filePath) { }
         public BSA(string filePath, Encoding encoding) : base(filePath, encoding) { }
@@ -156,36 +126,42 @@ namespace BsaLib.BSAUtil
                     this.Header = header;
                     this.FileCount = (int)header.FileCount;
                     this.Files.Capacity = this.FileCount;
-                    uint dataOffset = BSAHeaderMW.Size + header.HashOffset + header.FileCount * 8; // 8 = filename hash size
+                    var dataOffset = BSAHeaderMW.Size + header.HashOffset + (header.FileCount * 8); // 8 = filename hash size
 
                     // Store file sizes and offsets
-                    for (int i = 0; i < header.FileCount; i++)
+                    for (var i = 0; i < header.FileCount; i++)
                     {
-                        uint size = this.BinaryReader.ReadUInt32();
-                        uint offset = this.BinaryReader.ReadUInt32() + dataOffset;
+                        var size = this.BinaryReader.ReadUInt32();
+                        var offset = this.BinaryReader.ReadUInt32() + dataOffset;
 
                         this.Files.Add(new BSAFileEntry(this, offset.ToString(), offset, size));
                         this.Files[i].Index = i;
                     }
 
                     // Check if archive has name offset and name table, for example for Xbox
-                    this.BinaryReader.BaseStream.Position = BSAHeaderMW.Size + header.FileCount * 8; // Skip header and entries, 8 = file entry size
+                    this.BinaryReader.BaseStream.Position = BSAHeaderMW.Size + (header.FileCount * 8); // Skip header and entries, 8 = file entry size
 
                     // First name offset should be 0 if there is one, otherwise it doesn't have one
-                    hasNameTableMW = this.BinaryReader.ReadUInt32() == 0;
+                    this.hasNameTableMW = this.BinaryReader.ReadUInt32() == 0;
 
-                    if (hasNameTableMW)
-                        this.BinaryReader.BaseStream.Position = BSAHeaderMW.Size + header.FileCount * 12; // Seek to name table
-                    else
-                        this.BinaryReader.BaseStream.Position -= 4; // Go Back
-
-                    for (int i = 0; i < header.FileCount; i++)
+                    if (this.hasNameTableMW)
                     {
-                        if (hasNameTableMW)
+                        this.BinaryReader.BaseStream.Position = BSAHeaderMW.Size + (header.FileCount * 12); // Seek to name table
+                    }
+                    else
+                    {
+                        this.BinaryReader.BaseStream.Position -= 4; // Go Back
+                    }
+
+                    for (var i = 0; i < header.FileCount; i++)
+                    {
+                        if (this.hasNameTableMW)
+                        {
                             this.Files[i].FullPath = PathUtils.NormalizePath(this.BinaryReader.ReadStringTo('\0'));
+                        }
                         else
                         {
-                            ulong hash = this.BinaryReader.ReadUInt64();
+                            var hash = this.BinaryReader.ReadUInt64();
 
                             if (MorrowindNameTable.Contains(hash))
                             {
@@ -211,8 +187,8 @@ namespace BsaLib.BSAUtil
                     this.FileCount = (int)header.FileCount;
                     this.Files.Capacity = this.FileCount;
 
-                    int[] numfiles = new int[header.FolderCount];
-                    for (int i = 0; i < header.FolderCount; i++)
+                    var numfiles = new int[header.FolderCount];
+                    for (var i = 0; i < header.FolderCount; i++)
                     {
                         // Skip hash
                         this.BinaryReader.BaseStream.Position += 8;
@@ -222,18 +198,18 @@ namespace BsaLib.BSAUtil
                         this.BinaryReader.BaseStream.Position += header.Version == SSE_HEADER_VERSION ? 12 : 4;
                     }
 
-                    for (int i = 0; i < header.FolderCount; i++)
+                    for (var i = 0; i < header.FolderCount; i++)
                     {
-                        string folder = BinaryReader.ReadString(BinaryReader.ReadByte() - 1);
+                        var folder = this.BinaryReader.ReadString(this.BinaryReader.ReadByte() - 1);
                         this.BinaryReader.BaseStream.Position++;
 
-                        for (int j = 0; j < numfiles[i]; j++)
+                        for (var j = 0; j < numfiles[i]; j++)
                         {
                             // Skip hash
                             this.BinaryReader.BaseStream.Position += 8;
-                            uint size = this.BinaryReader.ReadUInt32();
-                            uint offset = this.BinaryReader.ReadUInt32();
-                            bool comp = this.Compressed;
+                            var size = this.BinaryReader.ReadUInt32();
+                            var offset = this.BinaryReader.ReadUInt32();
+                            var comp = this.Compressed;
 
                             if ((size & (1 << 30)) != 0)
                             {
@@ -250,19 +226,23 @@ namespace BsaLib.BSAUtil
                     if (this.RetrieveRealSize)
                     {
                         // Save the position so we can go back after to the name table
-                        long pos = this.BinaryReader.BaseStream.Position;
+                        var pos = this.BinaryReader.BaseStream.Position;
 
-                        for (int i = 0; i < header.FileCount; i++)
+                        for (var i = 0; i < header.FileCount; i++)
                         {
                             var entry = this.Files[i] as BSAFileEntry;
 
                             if (!entry.Compressed)
+                            {
                                 continue;
+                            }
 
                             this.BinaryReader.BaseStream.Position = (long)entry.Offset;
 
                             if (this.ContainsFileNameBlobs)
+                            {
                                 this.BinaryReader.BaseStream.Position += this.BinaryReader.ReadByte() + 1;
+                            }
 
                             entry.RealSize = this.BinaryReader.ReadUInt32();
                         }
@@ -271,14 +251,14 @@ namespace BsaLib.BSAUtil
                     }
 
                     // Read name table
-                    for (int i = 0; i < header.FileCount; i++)
+                    for (var i = 0; i < header.FileCount; i++)
                     {
-                        string fullPath = Path.Combine(this.Files[i].FullPath, this.BinaryReader.ReadStringTo('\0'));
+                        var fullPath = Path.Combine(this.Files[i].FullPath, this.BinaryReader.ReadStringTo('\0'));
                         this.Files[i].FullPath = PathUtils.NormalizePath(fullPath);
                         this.Files[i].FullPathOriginal = this.Files[i].FullPath;
                     }
                 }
-                else if (TryOpenXnGineBsa(filePath))
+                else if (this.TryOpenXnGineBsa(filePath))
                 {
                     // Parsed in helper.
                 }
@@ -286,8 +266,8 @@ namespace BsaLib.BSAUtil
                 {
                     // Assume it's a Fallout 2 DAT
                     this.BinaryReader.BaseStream.Position = this.BinaryReader.BaseStream.Length - 8;
-                    uint treeSize = this.BinaryReader.ReadUInt32();
-                    uint dataSize = this.BinaryReader.ReadUInt32();
+                    var treeSize = this.BinaryReader.ReadUInt32();
+                    var dataSize = this.BinaryReader.ReadUInt32();
 
                     if (dataSize != this.BinaryReader.BaseStream.Length)
                     {
@@ -299,7 +279,7 @@ namespace BsaLib.BSAUtil
                     this.FileCount = this.BinaryReader.ReadInt32();
                     this.Files.Capacity = this.FileCount;
 
-                    for (int i = 0; i < this.FileCount; i++)
+                    for (var i = 0; i < this.FileCount; i++)
                     {
                         var entry = new DAT2FileEntry(this.BinaryReader);
 
@@ -317,27 +297,35 @@ namespace BsaLib.BSAUtil
 
         private bool TryOpenXnGineBsa(string filePath)
         {
-            string extension = Path.GetExtension(filePath);
-            bool isBsa = string.Equals(extension, ".bsa", StringComparison.OrdinalIgnoreCase);
-            bool isSnd = string.Equals(extension, ".snd", StringComparison.OrdinalIgnoreCase);
-            bool isSav = string.Equals(extension, ".sav", StringComparison.OrdinalIgnoreCase);
+            var extension = Path.GetExtension(filePath);
+            var isBsa = string.Equals(extension, ".bsa", StringComparison.OrdinalIgnoreCase);
+            var isSnd = string.Equals(extension, ".snd", StringComparison.OrdinalIgnoreCase);
+            var isSav = string.Equals(extension, ".sav", StringComparison.OrdinalIgnoreCase);
 
             if (!isBsa && !isSnd && !isSav)
+            {
                 return false;
+            }
 
             var stream = this.BinaryReader.BaseStream;
             if (stream.Length < 2)
+            {
                 return false;
+            }
 
             stream.Position = 0;
-            ushort recordCount = this.BinaryReader.ReadUInt16();
-            ushort typeRaw = (ushort)XnGineIndexType.NameRecord;
+            var recordCount = this.BinaryReader.ReadUInt16();
+            var typeRaw = (ushort)XnGineIndexType.NameRecord;
             long dataStartOffset = 4;
 
             if (stream.Length >= 4)
+            {
                 typeRaw = this.BinaryReader.ReadUInt16();
+            }
             else
+            {
                 dataStartOffset = 2;
+            }
 
             XnGineIndexType type;
             if (typeRaw == (ushort)XnGineIndexType.NameRecord)
@@ -353,38 +341,48 @@ namespace BsaLib.BSAUtil
                 // Only .bsa should allow the legacy headerless variant (Arena GLOBAL.BSA style).
                 // .snd/.sav must have an explicit XnGine index type marker.
                 if (!isBsa)
+                {
                     return false;
+                }
 
                 type = XnGineIndexType.NameRecord;
                 dataStartOffset = 2;
             }
 
-            int descriptorSize = type == XnGineIndexType.NameRecord ? 18 : 8;
-            long footerSize = (long)recordCount * descriptorSize;
-            long footerOffset = stream.Length - footerSize;
+            var descriptorSize = type == XnGineIndexType.NameRecord ? 18 : 8;
+            var footerSize = (long)recordCount * descriptorSize;
+            var footerOffset = stream.Length - footerSize;
 
             if (footerOffset < dataStartOffset)
+            {
                 return false;
+            }
 
             if (!stream.CanSeek)
+            {
                 return false;
+            }
 
             stream.Position = footerOffset;
             var descriptors = new List<XnGineDescriptor>(recordCount);
 
-            for (int i = 0; i < recordCount; i++)
+            for (var i = 0; i < recordCount; i++)
             {
                 var descriptor = new XnGineDescriptor();
 
                 if (type == XnGineIndexType.NameRecord)
                 {
-                    byte[] nameRaw = this.BinaryReader.ReadBytes(12);
+                    var nameRaw = this.BinaryReader.ReadBytes(12);
                     if (nameRaw.Length != 12)
+                    {
                         return false;
+                    }
 
-                    int nullPos = Array.IndexOf(nameRaw, (byte)0);
+                    var nullPos = Array.IndexOf(nameRaw, (byte)0);
                     if (nullPos < 0)
+                    {
                         nullPos = nameRaw.Length;
+                    }
 
                     descriptor.Name = Encoding.ASCII.GetString(nameRaw, 0, nullPos);
                     descriptor.Compressed = this.BinaryReader.ReadInt16();
@@ -398,28 +396,34 @@ namespace BsaLib.BSAUtil
                 }
 
                 if (descriptor.Size < 0)
+                {
                     return false;
+                }
 
                 descriptors.Add(descriptor);
             }
 
-            long recordOffset = dataStartOffset;
+            var recordOffset = dataStartOffset;
             var parsedEntries = new List<XNGBSAFileEntry>(recordCount);
 
-            for (int i = 0; i < descriptors.Count; i++)
+            for (var i = 0; i < descriptors.Count; i++)
             {
                 var descriptor = descriptors[i];
                 long size = descriptor.Size;
 
                 if (recordOffset + size > footerOffset)
+                {
                     return false;
+                }
 
                 string fullPath;
                 if (type == XnGineIndexType.NameRecord)
                 {
                     fullPath = descriptor.Name;
                     if (string.IsNullOrWhiteSpace(fullPath))
+                    {
                         fullPath = string.Format("{0:D6}.bin", i);
+                    }
 
                     fullPath = PathUtils.NormalizePath(fullPath);
                 }
@@ -444,7 +448,9 @@ namespace BsaLib.BSAUtil
             }
 
             if (recordOffset != footerOffset)
+            {
                 return false;
+            }
 
             this.FileCount = recordCount;
             this.Files.Clear();
@@ -468,19 +474,14 @@ namespace BsaLib.BSAUtil
 
         public static bool IsSupportedVersion(string filePath, Encoding encoding)
         {
-            using (var br = new BinaryReader(new FileStream(filePath, FileMode.Open, FileAccess.Read), encoding))
-            {
-                uint type = br.ReadUInt32();
-                int version = br.ReadInt32();
+            using var br = new BinaryReader(new FileStream(filePath, FileMode.Open, FileAccess.Read), encoding);
+            var type = br.ReadUInt32();
+            var version = br.ReadInt32();
 
-                // Only Oblivion/Fallout BSAs needs this version check, so if it's neither always return true
-                if (type != BSA_HEADER_MAGIC)
-                    return true;
-
-                return version == OB_HEADER_VERSION
-                    || version == F3_HEADER_VERSION
-                    || version == SSE_HEADER_VERSION;
-            }
+            // Only Oblivion/Fallout BSAs needs this version check, so if it's neither always return true
+            return type != BSA_HEADER_MAGIC || version is OB_HEADER_VERSION
+                or F3_HEADER_VERSION
+                or SSE_HEADER_VERSION;
         }
     }
 }

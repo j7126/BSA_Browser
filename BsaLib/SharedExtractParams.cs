@@ -13,7 +13,7 @@ namespace BsaLib
 
         public void Dispose()
         {
-            ((IDisposable)Reader).Dispose();
+            ((IDisposable)this.Reader).Dispose();
         }
     }
 }

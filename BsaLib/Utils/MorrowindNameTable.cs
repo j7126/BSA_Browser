@@ -13,17 +13,17 @@ namespace BsaLib.Utils
         static MorrowindNameTable()
         {
             if (!File.Exists(FileName))
-                return;
-
-            using (var file = new BinaryReader(File.OpenRead(FileName)))
             {
-                file.BaseStream.Seek(12, SeekOrigin.Begin);
-                uint count = file.ReadUInt32();
+                return;
+            }
 
-                for (int i = 0; i < count; i++)
-                {
-                    NameTable.Add(file.ReadUInt64(), file.ReadStringTo('\0'));
-                }
+            using var file = new BinaryReader(File.OpenRead(FileName));
+            _ = file.BaseStream.Seek(12, SeekOrigin.Begin);
+            var count = file.ReadUInt32();
+
+            for (var i = 0; i < count; i++)
+            {
+                NameTable.Add(file.ReadUInt64(), file.ReadStringTo('\0'));
             }
         }
 

@@ -24,61 +24,52 @@ namespace BsaLib.BA2Util
 
         public BA2Header(BinaryReader br)
         {
-            Magic = ParseMagic(br.ReadChars(4));
-            Version = br.ReadUInt32();
-            Type = ParseType(br.ReadChars(4));
-            NumFiles = br.ReadUInt32();
-            NameTableOffset = br.ReadUInt64();
+            this.Magic = ParseMagic(br.ReadChars(4));
+            this.Version = br.ReadUInt32();
+            this.Type = ParseType(br.ReadChars(4));
+            this.NumFiles = br.ReadUInt32();
+            this.NameTableOffset = br.ReadUInt64();
 
-            Unknown1 = 0;
-            Unknown2 = 0;
-            Unknown3 = 0;
+            this.Unknown1 = 0;
+            this.Unknown2 = 0;
+            this.Unknown3 = 0;
 
-            if (Version == 2)
+            if (this.Version == 2)
             {
-                Unknown1 = br.ReadUInt32();
-                Unknown2 = br.ReadUInt32();
+                this.Unknown1 = br.ReadUInt32();
+                this.Unknown2 = br.ReadUInt32();
             }
 
-            if (Version == 3)
+            if (this.Version == 3)
             {
-                Unknown1 = br.ReadUInt32();
-                Unknown2 = br.ReadUInt32();
-                Unknown3 = br.ReadUInt32();
+                this.Unknown1 = br.ReadUInt32();
+                this.Unknown2 = br.ReadUInt32();
+                this.Unknown3 = br.ReadUInt32();
             }
 
             // If version is 3, then Unknown1 means which compression format is used. TODO: Consider renaming Unknown1
-            if (Version == 3)
-            {
-                CompressionFormat = Unknown1 == 1 ? CompressionFormat.LZ4 : CompressionFormat.Zip;
-            }
-            else
-            {
-                CompressionFormat = CompressionFormat.Zip;
-            }
+            this.CompressionFormat = this.Version == 3 ? this.Unknown1 == 1 ? CompressionFormat.LZ4 : CompressionFormat.Zip : CompressionFormat.Zip;
         }
 
         private static BA2HeaderMagic ParseMagic(char[] chars)
         {
             string magic = new(chars);
-            if (Enum.TryParse(magic, true, out BA2HeaderMagic magicParsed))
-                return magicParsed;
-            else
-                throw new Exception($"Unknown {nameof(BA2Header)}.{nameof(Magic)} value: ${magic}");
+            return Enum.TryParse(magic, true, out BA2HeaderMagic magicParsed)
+                ? magicParsed
+                : throw new Exception($"Unknown {nameof(BA2Header)}.{nameof(Magic)} value: ${magic}");
         }
 
         private static BA2HeaderType ParseType(char[] chars)
         {
             string type = new(chars);
-            if (Enum.TryParse(type, true, out BA2HeaderType typeParsed))
-                return typeParsed;
-            else
-                throw new Exception($"Unknown {nameof(BA2Header)}.{nameof(Type)} value: ${type}");
+            return Enum.TryParse(type, true, out BA2HeaderType typeParsed)
+                ? typeParsed
+                : throw new Exception($"Unknown {nameof(BA2Header)}.{nameof(Type)} value: ${type}");
         }
 
-        public override string ToString()
+        public override readonly string ToString()
         {
-            return $"Magic: {Magic} Version: {Version} Type: {Type} NumFiles: {NumFiles} NameTableOffset: {NameTableOffset}";
+            return $"Magic: {this.Magic} Version: {this.Version} Type: {this.Type} NumFiles: {this.NumFiles} NameTableOffset: {this.NameTableOffset}";
         }
     }
 }

@@ -2,10 +2,17 @@
 
 namespace BsaLib
 {
+    /// <summary>
+    /// An entry in an <see cref="Archive"/>.
+    /// </summary>
+    /// <param name="archive">The archive containing this entry.</param>
     public abstract class ArchiveEntry(Archive archive)
     {
         #region Properties
 
+        /// <summary>
+        /// Gets the number of bytes written to the output stream when extracting this entry.
+        /// </summary>
         public ulong BytesWritten { get; protected set; }
 
         /// <summary>
@@ -18,8 +25,15 @@ namespace BsaLib
         /// </summary>
         public bool HadHashTranslated { get; internal set; }
 
-        public uint nameHash { get; protected set; }
-        public uint dirHash { get; protected set; }
+        /// <summary>
+        /// Gets the name hash of the entry.
+        /// </summary>
+        public uint NameHash { get; protected set; }
+
+        /// <summary>
+        /// Gets the directory hash of the entry.
+        /// </summary>
+        public uint DirHash { get; protected set; }
 
         /// <summary>
         /// Gets the file extension.
@@ -56,6 +70,9 @@ namespace BsaLib
         /// </summary>
         public virtual bool Compressed { get; protected set; }
 
+        /// <summary>
+        /// Gets the offset of the entry in the archive.
+        /// </summary>
         public virtual ulong Offset { get; protected set; }
 
         /// <summary>
@@ -82,39 +99,47 @@ namespace BsaLib
 
         public void Extract(bool preserveFolder)
         {
-            Extract(string.Empty, preserveFolder);
+            this.Extract(string.Empty, preserveFolder);
         }
         public void Extract(string destination, bool preserveFolder)
         {
-            Extract(destination, preserveFolder, FileName);
+            this.Extract(destination, preserveFolder, this.FileName);
         }
         public void Extract(string destination, bool preserveFolder, string newName)
         {
-            Extract(destination, preserveFolder, newName, new SharedExtractParams(Archive, false));
+            this.Extract(destination, preserveFolder, newName, new SharedExtractParams(this.Archive, false));
         }
         public void Extract(string destination, bool preserveFolder, string newName, SharedExtractParams extractParams)
         {
-            string path = preserveFolder ? this.Folder : string.Empty;
+            var path = preserveFolder ? this.Folder : string.Empty;
 
             path = Path.Combine(path, newName);
 
             if (!string.IsNullOrEmpty(destination))
+            {
                 path = Path.Combine(destination, path);
+            }
 
             if (!Directory.Exists(Path.GetDirectoryName(path)))
-                Directory.CreateDirectory(Path.GetDirectoryName(path));
+            {
+                _ = Directory.CreateDirectory(Path.GetDirectoryName(path));
+            }
 
             using (var fs = File.Create(path))
+            {
                 this.WriteDataToStream(fs, extractParams);
+            }
 
             if (this.Archive.MatchLastWriteTime)
+            {
                 File.SetLastWriteTime(path, this.Archive.LastWriteTime);
+            }
         }
 
         /// <summary>
         /// Extracts and uncompresses data and then returns the stream.
         /// </summary>
-        public virtual MemoryStream GetDataStream() => GetDataStream(new SharedExtractParams(Archive, false));
+        public virtual MemoryStream GetDataStream() => this.GetDataStream(new SharedExtractParams(this.Archive, false));
         /// <summary>
         /// Extracts and uncompresses data and then returns the stream.
         /// </summary>
@@ -124,14 +149,14 @@ namespace BsaLib
 
             this.WriteDataToStream(ms, extractParams);
 
-            ms.Seek(0, SeekOrigin.Begin);
+            _ = ms.Seek(0, SeekOrigin.Begin);
             return ms;
         }
 
         /// <summary>
         /// Returns a <see cref="MemoryStream"/> of the raw data.
         /// </summary>
-        public MemoryStream GetRawDataStream() => GetRawDataStream(new SharedExtractParams(Archive, false));
+        public MemoryStream GetRawDataStream() => this.GetRawDataStream(new SharedExtractParams(this.Archive, false));
         /// <summary>
         /// Returns a <see cref="MemoryStream"/> of the raw data.
         /// </summary>
@@ -141,7 +166,7 @@ namespace BsaLib
 
             this.WriteDataToStream(ms, extractParams, false);
 
-            ms.Seek(0, SeekOrigin.Begin);
+            _ = ms.Seek(0, SeekOrigin.Begin);
             return ms;
         }
 

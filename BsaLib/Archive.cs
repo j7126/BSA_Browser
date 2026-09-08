@@ -6,6 +6,9 @@ using BsaLib.Enums;
 
 namespace BsaLib
 {
+    /// <summary>
+    /// The archive.
+    /// </summary>
     public abstract class Archive
     {
         public bool MatchLastWriteTime { get; set; }

@@ -7,9 +7,9 @@ namespace BsaLib.Extensions
     {
         public static byte[] ReadBytes(this Stream stream, int count)
         {
-            byte[] data = new byte[count];
-            int read = stream.Read(data, 0, count);
-            byte[] trimmed = new byte[read];
+            var data = new byte[count];
+            var read = stream.Read(data, 0, count);
+            var trimmed = new byte[read];
 
             Array.Copy(data, trimmed, read);
 

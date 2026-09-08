@@ -4,27 +4,28 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using BsaBrowserCli.Filtering;
-using BsaBrowserCli;
 using BsaLib;
 using BsaLib.BA2Util;
 
 namespace BsaBrowserCli
 {
-    class Program
+    internal class Program
     {
         private const int ERROR_INVALID_FUNCTION = 1;
         private const int ERROR_FILE_NOT_FOUND = 2;
         private const int ERROR_PATH_NOT_FOUND = 3;
         private const int ERROR_BAD_ARGUMENTS = 160;
 
-        static Arguments _arguments;
-        static readonly List<IFilterPredicate> _filters = [];
+        private static Arguments _arguments;
+        private static readonly List<IFilterPredicate> _filters = [];
 
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
             // Parse arguments. Go to exit if null, errors has occurred and been handled
             if ((_arguments = ParseArguments(args)) == null)
+            {
                 return;
+            }
 
             // Print help screen. Ignore other arguments
             if (args.Length == 0 || _arguments.Help)
@@ -73,7 +74,7 @@ namespace BsaBrowserCli
             {
                 try
                 {
-                    PrintFileList(_arguments.Inputs.ToList(), _arguments.ListOptions);
+                    PrintFileList([.. _arguments.Inputs], _arguments.ListOptions);
                 }
                 catch (Exception ex)
                 {
@@ -87,7 +88,7 @@ namespace BsaBrowserCli
             {
                 try
                 {
-                    ExtractFiles(_arguments.Inputs.ToList(), _arguments.Destination, _arguments.Overwrite);
+                    ExtractFiles([.. _arguments.Inputs], _arguments.Destination, _arguments.Overwrite);
                 }
                 catch (Exception ex)
                 {
@@ -98,7 +99,7 @@ namespace BsaBrowserCli
             }
         }
 
-        static Arguments ParseArguments(params string[] args)
+        private static Arguments ParseArguments(params string[] args)
         {
             try
             {
@@ -123,7 +124,7 @@ namespace BsaBrowserCli
             return null;
         }
 
-        static void PrintHelp()
+        private static void PrintHelp()
         {
             Console.WriteLine("BSA Browser CLI - " + Assembly.GetExecutingAssembly().GetName().Version.ToString(3));
             Console.WriteLine("Extract or list files inside .bsa, .snd, .sav and .ba2 archives.");
@@ -158,13 +159,15 @@ namespace BsaBrowserCli
             Console.WriteLine();
         }
 
-        static void PrintFileList(List<string> archives, ListOptions options)
+        private static void PrintFileList(List<string> archives, ListOptions options)
         {
             archives.ForEach(archivePath =>
             {
                 // If there are multiple archives print archive filename to differentiate
                 if (archives.Count > 1)
+                {
                     Console.WriteLine($"{Path.GetFileName(archivePath)}:");
+                }
 
                 Archive archive = null;
 
@@ -175,20 +178,24 @@ namespace BsaBrowserCli
                 catch (Exception)
                 {
                     if (!_arguments.IgnoreErrors)
+                    {
                         throw;
+                    }
                     else
+                    {
                         Console.WriteLine($"An error occured opening '{Path.GetFileName(archivePath)}'. Skipping...");
+                    }
                 }
 
-                bool filename = options.HasFlag(ListOptions.Filename);
-                bool filesize = options.HasFlag(ListOptions.FileSize);
-                bool filesizeFormat = options.HasFlag(ListOptions.FileSizeFormat);
-                string prefix = FormatPrefix(options, archive);
-                string indent = string.IsNullOrEmpty(prefix) && archives.Count > 1 ? "\t" : string.Empty;
+                var filename = options.HasFlag(ListOptions.Filename);
+                var filesize = options.HasFlag(ListOptions.FileSize);
+                var filesizeFormat = options.HasFlag(ListOptions.FileSizeFormat);
+                var prefix = FormatPrefix(options, archive);
+                var indent = string.IsNullOrEmpty(prefix) && archives.Count > 1 ? "\t" : string.Empty;
 
                 foreach (var entry in archive.Files.Where(x => Filter(x.FullPath)))
                 {
-                    string filesizeString = filesizeFormat ? FormatBytes(Math.Max(entry.RealSize, entry.Size)).PadLeft(12) + "\t" :
+                    var filesizeString = filesizeFormat ? FormatBytes(Math.Max(entry.RealSize, entry.Size)).PadLeft(12) + "\t" :
                                                   filesize ? Math.Max(entry.RealSize, entry.Size).ToString("N0").PadLeft(12) + "\t" : string.Empty;
 
                     Console.WriteLine("{0}{1}{2}",
@@ -201,7 +208,7 @@ namespace BsaBrowserCli
             });
         }
 
-        static void ExtractFiles(List<string> archives, string destination, bool overwrite)
+        private static void ExtractFiles(List<string> archives, string destination, bool overwrite)
         {
             archives.ForEach(archivePath =>
             {
@@ -214,15 +221,19 @@ namespace BsaBrowserCli
                 catch (Exception)
                 {
                     if (!_arguments.IgnoreErrors)
+                    {
                         throw;
+                    }
                     else
+                    {
                         Console.WriteLine($"An error occured opening '{Path.GetFileName(archivePath)}'. Skipping...");
+                    }
                 }
 
-                int count = 0;
-                int line = -1;
-                int prevLength = 0;
-                int skipped = 0;
+                var count = 0;
+                var line = -1;
+                var prevLength = 0;
+                var skipped = 0;
                 var files = archive.Files.Where(x => Filter(x.FullPath)).ToList();
 
                 HandleUnsupportedTextures(files);
@@ -238,7 +249,7 @@ namespace BsaBrowserCli
 
                 foreach (var entry in files)
                 {
-                    string output = $"Extracting: {++count}/{files.Count} - {entry.FullPath}".PadRight(prevLength);
+                    var output = $"Extracting: {++count}/{files.Count} - {entry.FullPath}".PadRight(prevLength);
 
                     if (line > -1)
                     {
@@ -265,94 +276,104 @@ namespace BsaBrowserCli
                     catch (Exception)
                     {
                         if (!_arguments.IgnoreErrors)
+                        {
                             throw;
+                        }
                         else
+                        {
                             Console.WriteLine($"An error occured extracting '{entry.FullPath}'. Skipping...");
+                        }
                     }
                 }
 
                 Console.WriteLine();
 
                 if (skipped > 0)
+                {
                     Console.WriteLine($"Skipped {skipped} existing files");
+                }
             });
         }
 
-        static bool Filter(string input)
+        private static bool Filter(string input)
         {
             foreach (var filter in _filters)
             {
-                if (filter.Match(input) == false)
+                if (!filter.Match(input))
+                {
                     return false;
+                }
             }
 
             return true;
         }
 
-        static Archive OpenArchive(string file)
+        private static Archive OpenArchive(string file)
         {
             Archive archive = null;
-            string extension = Path.GetExtension(file);
+            var extension = Path.GetExtension(file);
 
-            switch (extension.ToLower())
+            archive = extension.ToLower() switch
             {
-                case ".bsa":
-                case ".dat":
-                case ".snd":
-                case ".sav":
-                    archive = new BsaLib.BSAUtil.BSA(file, _arguments.Encoding);
-                    break;
-                case ".ba2":
-                    archive = new BsaLib.BA2Util.BA2(file, _arguments.Encoding);
-                    break;
-                default:
-                    throw new Exception($"Unrecognized archive file type ({extension}).");
-            }
-
+                ".bsa" or ".dat" or ".snd" or ".sav" => new BsaLib.BSAUtil.BSA(file, _arguments.Encoding),
+                ".ba2" => new BA2(file, _arguments.Encoding),
+                _ => throw new Exception($"Unrecognized archive file type ({extension})."),
+            };
             archive.MatchLastWriteTime = _arguments.MatchTimeChanged;
             archive.Files.Sort((a, b) => string.CompareOrdinal(a.LowerPath, b.LowerPath));
             return archive;
         }
 
-        static void HandleUnsupportedTextures(List<ArchiveEntry> files)
+        private static void HandleUnsupportedTextures(List<ArchiveEntry> files)
         {
-            for (int i = files.Count; i-- > 0;)
+            for (var i = files.Count; i-- > 0;)
             {
-                if (files[i] is BA2TextureEntry tex && tex.IsFormatSupported() == false)
+                if (files[i] is BA2TextureEntry tex && !tex.IsFormatSupported())
                 {
                     if (_arguments.NoHeaders)
+                    {
                         tex.GenerateTextureHeader = false;
+                    }
                     else
+                    {
                         files.RemoveAt(i); // Remove unsupported textures to skip them
+                    }
                 }
             }
         }
 
-        static string FormatBytes(long bytes)
+        private static string FormatBytes(long bytes)
         {
             const int scale = 1024;
-            string[] orders = new string[] { "GB", "MB", "KB", " B" };
-            long max = (long)Math.Pow(scale, orders.Length - 1);
+            var orders = new string[] { "GB", "MB", "KB", " B" };
+            var max = (long)Math.Pow(scale, orders.Length - 1);
 
-            foreach (string order in orders)
+            foreach (var order in orders)
             {
                 if (bytes > max)
+                {
                     return string.Format("{0:#.00} {1}", decimal.Divide(bytes, max), order);
+                }
 
                 max /= scale;
             }
             return "0 Bytes";
         }
 
-        static string FormatPrefix(ListOptions options, Archive archive)
+        private static string FormatPrefix(ListOptions options, Archive archive)
         {
-            string prefix = string.Empty;
+            var prefix = string.Empty;
 
             if (options.HasFlag(ListOptions.Archive))
+            {
                 prefix = Path.GetFileName(archive.FullPath);
+            }
 
             if (options.HasFlag(ListOptions.FullPath))
+            {
                 prefix = Path.GetFullPath(archive.FullPath);
+            }
+
             return prefix;
         }
     }

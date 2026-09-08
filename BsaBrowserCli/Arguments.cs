@@ -59,9 +59,9 @@ namespace BsaBrowserCli
             var input = new List<string>();
             var filters = new List<Filter>();
 
-            for (int i = 0; i < args.Length; i++)
+            for (var i = 0; i < args.Length; i++)
             {
-                string arg = args[i];
+                var arg = args[i];
 
                 if (arg.StartsWith("-") || arg.StartsWith("--"))
                 {
@@ -75,7 +75,7 @@ namespace BsaBrowserCli
                         case "/e":
                         case "-e":
                             this.Extract = true;
-                            this.ExtractOptions = ParseExtractOptions(arg);
+                            this.ExtractOptions = this.ParseExtractOptions(arg);
                             break;
                         case "/f":
                         case "-f":
@@ -88,7 +88,7 @@ namespace BsaBrowserCli
                         case "/l":
                         case "-l":
                             this.List = true;
-                            this.ListOptions = ParseListOptions(arg);
+                            this.ListOptions = this.ParseListOptions(arg);
                             break;
                         case "/regex":
                         case "--regex":
@@ -126,10 +126,7 @@ namespace BsaBrowserCli
                 {
                     if (i == args.Length - 1 && this.Extract) // Last item is destination when extracting
                     {
-                        if (Directory.Exists(arg))
-                            this.Destination = arg;
-                        else
-                            throw new DirectoryNotFoundException("Destination directory not found.");
+                        this.Destination = Directory.Exists(arg) ? arg : throw new DirectoryNotFoundException("Destination directory not found.");
                     }
                     else if (File.Exists(arg))
                     {
@@ -152,19 +149,25 @@ namespace BsaBrowserCli
 
             // Check if there is any sub options
             if (!arg.Contains(':') && !arg.Contains('='))
+            {
                 return ExtractOptions.Directory;
+            }
 
             // Get chars after : or =
             var options = arg.Split(':', '=').Last().ToLower().ToCharArray();
 
             // Check that all sub options are valid
-            if (options.Any(x => AllowedOptions.Contains(x) == false))
+            if (options.Any(x => !AllowedOptions.Contains(x)))
+            {
                 throw new ArgumentException("Unknown -e sub options: " + new string(options) + "\nSee --help page for valid options.");
+            }
 
             var value = ExtractOptions.Directory;
 
             if (options.Contains('n'))
+            {
                 value = ExtractOptions.NoDirectory;
+            }
 
             return value;
         }
@@ -175,26 +178,42 @@ namespace BsaBrowserCli
 
             // Check if there is any sub options
             if (!arg.Contains(':') && !arg.Contains('='))
+            {
                 return ListOptions.None;
+            }
 
             // Get chars after : or =
             var options = arg.Split(':', '=').Last().ToLower().ToCharArray();
 
             // Check that all sub options are valid
-            if (options.Any(x => AllowedOptions.Contains(x) == false))
+            if (options.Any(x => !AllowedOptions.Contains(x)))
+            {
                 throw new ArgumentException("Unknown -l sub options: " + new string(options) + "\nSee --help page for valid options.");
+            }
 
             var value = ListOptions.None;
 
-            foreach (char c in options)
+            foreach (var c in options)
             {
                 switch (c)
                 {
-                    case 'a': value |= ListOptions.Archive; break;
-                    case 'f': value |= ListOptions.FullPath; break;
-                    case 'n': value |= ListOptions.Filename; break;
-                    case 's': value |= ListOptions.FileSize; break;
-                    case 'x': value |= ListOptions.FileSizeFormat; break;
+                    case 'a':
+                        value |= ListOptions.Archive;
+                        break;
+                    case 'f':
+                        value |= ListOptions.FullPath;
+                        break;
+                    case 'n':
+                        value |= ListOptions.Filename;
+                        break;
+                    case 's':
+                        value |= ListOptions.FileSize;
+                        break;
+                    case 'x':
+                        value |= ListOptions.FileSizeFormat;
+                        break;
+                    default:
+                        break;
                 }
             }
 
@@ -203,19 +222,18 @@ namespace BsaBrowserCli
 
         private Encoding ParseEncoding(string encoding)
         {
-#pragma warning disable SYSLIB0001 // Type or member is obsolete
-            switch (encoding.ToLower())
+            return encoding.ToLower() switch
             {
-                case "utf7": return Encoding.UTF7;
-                case "system": return Encoding.Default;
-                case "ascii": return Encoding.ASCII;
-                case "unicode": return Encoding.Unicode;
-                case "utf32": return Encoding.UTF32;
-                case "utf8": return Encoding.UTF8;
-                default:
-                    throw new ArgumentException("Unrecognized encoding: " + encoding);
-            }
+#pragma warning disable SYSLIB0001 // Type or member is obsolete - utf7 is still supported for backwards compatibility
+                "utf7" => Encoding.UTF7,
 #pragma warning restore SYSLIB0001 // Type or member is obsolete
+                "system" => Encoding.Default,
+                "ascii" => Encoding.ASCII,
+                "unicode" => Encoding.Unicode,
+                "utf32" => Encoding.UTF32,
+                "utf8" => Encoding.UTF8,
+                _ => throw new ArgumentException("Unrecognized encoding: " + encoding),
+            };
         }
     }
 }

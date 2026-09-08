@@ -24,7 +24,7 @@ namespace BsaLib.Extensions
             char c;
             while ((c = reader.ReadChar()) != endChar)
             {
-                sb.Append(c);
+                _ = sb.Append(c);
             }
             return sb.ToString();
         }
@@ -34,9 +34,9 @@ namespace BsaLib.Extensions
         /// </summary>
         public static uint ReadUInt32From(this BinaryReader reader, long offset)
         {
-            long position = reader.BaseStream.Position;
+            var position = reader.BaseStream.Position;
             reader.BaseStream.Position = offset;
-            uint value = reader.ReadUInt32();
+            var value = reader.ReadUInt32();
             reader.BaseStream.Position = position;
             return value;
         }
@@ -49,11 +49,13 @@ namespace BsaLib.Extensions
         /// <param name="returnPosition"><see cref="bool">True</see> will return position back to before operation.</param>
         public static void WriteAt(this BinaryWriter writer, long position, uint value, bool returnPosition = true)
         {
-            long startPosition = writer.BaseStream.Position;
+            var startPosition = writer.BaseStream.Position;
             writer.BaseStream.Position = position;
             writer.Write(value);
             if (returnPosition)
+            {
                 writer.BaseStream.Position = startPosition;
+            }
         }
     }
 }
